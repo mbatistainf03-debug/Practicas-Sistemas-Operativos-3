@@ -1,0 +1,107 @@
+Práctica 1: Gestión de paquetes
+🔹 Acceso como superusuario
+sudo su
+🔹 Actualizar repositorios y sistema
+sudo apt update -y
+sudo apt upgrade -y
+
+Descripción:
+
+update: sincroniza la lista de paquetes disponibles
+
+upgrade: instala versiones más recientes
+
+🔹 Ver repositorios configurados
+cat /etc/apt/sources.list
+
+Ejemplo:
+
+deb http://deb.debian.org/debian/ trixie main non-free-firmware
+deb-src http://deb.debian.org/debian/ trixie main non-free-firmware
+🔹 Buscar paquete
+apt search bashtop
+🔹 Ejecutar programa
+bashtop
+🔹 Eliminar paquete completamente
+sudo apt purge bashtop -y
+🔹 Limpiar dependencias innecesarias
+sudo apt autoremove -y
+🔹 Verificar instalación
+which bashtop
+
+---------------------------
+
+ Práctica 2: Tareas programadas
+🔹 Acceder como root
+su -
+🔹 Editar tareas cron
+sudo crontab -e
+
+Agregar:
+
+0 23 * * * apt update && apt upgrade -y
+0 3 * * 0 /sbin/shutdown -r now
+
+Descripción:
+
+Actualiza el sistema diariamente a las 11:00 PM
+
+Reinicia el sistema los domingos a las 3:00 AM
+
+Guardar:
+
+CTRL + O → Enter → CTRL + X
+🔹 Ver tareas activas
+sudo crontab -l
+🔹 Instalar at
+sudo apt update
+sudo apt install at -y
+🔹 Activar servicio atd
+sudo systemctl start atd
+sudo systemctl enable atd
+🔹 Ver contenido de /tmp
+ls /tmp
+🔹 Programar tarea temporal
+echo "rm -rf /tmp/*" | at now + 1 minute
+🔹 Ver tareas pendientes
+atq
+🔹 Verificar ejecución
+ls /tmp
+
+
+
+
+---------------------------
+ Práctica 3: Gestión de discos
+🔹 Ver discos disponibles
+lsblk
+🔹 Crear partición
+sudo fdisk /dev/sdb
+
+Dentro de fdisk:
+
+n → nueva partición  
+p → primaria  
+Enter → valores por defecto  
+w → guardar cambios  
+🔹 Verificar partición
+lsblk
+🔹 Formatear partición
+sudo mkfs.ext4 /dev/sdb1
+🔹 Crear punto de montaje
+mkdir ~/Escritorio/disco20gb
+🔹 Montar disco
+sudo mount /dev/sdb1 ~/Escritorio/disco20gb
+🔹 Verificar montaje
+df -h
+🔹 Crear archivo de prueba
+cd ~/Escritorio/disco20gb
+touch AdrianAlcantara.txt
+ls
+🔹 Desmontar unidad
+sudo umount /dev/sdb1
+🔹 Montar en /mnt
+sudo mount /dev/sdb1 /mnt
+🔹 Verificar archivo
+cd /mnt
+ls
