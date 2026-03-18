@@ -1,0 +1,126 @@
+Practica 1 Instalar un servidor HTTP apache2/nginx
+
+
+-------------sudo apt update
+----------------sudo apt install apache2 -y
+
+apt update → actualiza lista de paquetes.
+
+apt install apache2 → instala el servidor HTTP Apache.
+
+-y → responde “sí” automáticamente a cualquier confirmación.
+
+-------sudo mkdir -p /var/www/hola
+-------sudo nano /var/www/hola/index.html
+
+Escribe dentro:
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hola Mundo</title>
+</head>
+<body>
+    <h1>Hola Mundo</h1>
+</body>
+</html>
+
+Crear un host virtual en Apache para puerto 80
+-------sudo nano /etc/apache2/sites-available/hola.conf
+
+Agrega:
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@localhost
+    ServerName hola.local
+    DocumentRoot /var/www/hola
+
+    ErrorLog ${APACHE_LOG_DIR}/hola_error.log
+    CustomLog ${APACHE_LOG_DIR}/hola_access.log combined
+</VirtualHost>
+
+*:80 → escucha en el puerto 80
+
+DocumentRoot → carpeta donde está el HTML
+
+ServerName → nombre del host virtual
+
+
+Habilitar el host y reiniciar Apache
+
+------- sudo a2ensite hola.conf
+------- sudo systemctl restart apache2
+
+para comprobar que se creo 
+--------sudo nano /etc/hosts
+Agrega:
+
+127.0.0.1 hola.local
+
+Ahora, en navegador, si pones http://hola.local/ debe aparecer “Hola Mundo”.
+
+Crear un segundo website con tu nombre, matrícula y materia
+------sudo mkdir -p /var/www/info
+-------sudo nano /var/www/info/index.html
+dentro de este 
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Información del estudiante</title>
+</head>
+<body>
+    <h1>Nombre: Melvin Batista</h1>
+    <h2>Matrícula: 20230119</h2>
+    <h3>Materia: Sistemas Operativos 3</h3>
+</body>
+</html>
+
+-----------------------sudo nano /etc/apache2/sites-available/info.conf
+
+<VirtualHost *:8080>
+    ServerAdmin webmaster@localhost
+    ServerName info.local
+    DocumentRoot /var/www/info
+
+    ErrorLog ${APACHE_LOG_DIR}/info_error.log
+    CustomLog ${APACHE_LOG_DIR}/info_access.log combined
+</VirtualHost>
+
+------------sudo nano /etc/apache2/ports.conf
+Agrega línea:
+
+Listen 8080
+
+-------sudo a2ensite info.conf
+-------sudo systemctl restart apache2
+
+-------------------------------------------------------
+
+Practica 3 Impresora en linux 
+
+
+sudo apt install cups printer-driver-cups-pdf -y
+
+http://localhost:631/
+
+
+
+sudo nano /etc/cups/cupsd.conf
+
+# Only listen for connections from the local machine.
+port 631
+
+
+
+# Restrict access to the server...
+<Location />
+  Order allow,deny
+  Allow from 192.168.0.0/24
+</Location>
+
+luego desde el navegador de windows pondremos 
+
+http://192.168.0.150:631
+
+buscaremos añadir impresora por 
+http://192.168.0.150:631/printers/PDF
