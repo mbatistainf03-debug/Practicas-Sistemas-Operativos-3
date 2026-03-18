@@ -1,52 +1,184 @@
 PRACTICA 2 MODULO 1
 
-su - 
-ip addr
-mntui
-nano /etc/network/interfaces
+su -
 
+Cambia al usuario root (administrador).
+
+El - carga el entorno completo de root (PATH, variables, etc.).
+
+🔹 ip addr
+
+Muestra todas las interfaces de red y sus direcciones IP.
+
+Sirve para verificar si tienes IP asignada o no.
+
+🔹 mntui
+
+Parece un error tipográfico. Lo correcto es:
+
+nmtui
+
+Abre una interfaz gráfica en terminal para configurar red (NetworkManager).
+
+🔹 nano /etc/network/interfaces
+
+Abre el archivo de configuración de red en modo texto.
+
+Aquí defines cómo se comporta la interfaz (DHCP o IP fija).
+
+🔹 Configuración DHCP
 auto ens33
 iface ens33 inet dhcp
 
+auto ens33: levanta la interfaz automáticamente al iniciar.
+
+iface ens33 inet dhcp: obtiene IP automáticamente desde un servidor DHCP (como el router).
+
+🔹 Configuración IP estática
 auto ens33
 iface ens33 inet static
     address 192.168.0.150
     netmask 255.255.255.0
     gateway 192.168.0.1
 
+Cambias de DHCP a IP manual.
 
+address: IP fija.
+
+netmask: máscara de red.
+
+gateway: puerta de enlace (router).
+
+⚠️ Nota: No debes dejar DHCP y static al mismo tiempo activos. Se usa uno u otro.
+
+🔹 Configuración con NetworkManager (nmcli)
 nmcli con mod "Wired connection 1" ipv4.addresses 192.168.0.150/24 ipv4.gateway 192.168.0.1 ipv4.dns "8.8.8.8,8.8.4.4" ipv4.method manual
+
+Modifica la conexión de red:
+
+IP: 192.168.0.150/24
+
+Gateway: 192.168.0.1
+
+DNS: Google (8.8.8.8, 8.8.4.4)
+
+manual: indica IP fija
+
 nmcli con up "Wired connection 1"
 
-PRACTICA 3 MODULO 1
+Aplica los cambios reiniciando la conexión.
 
-su -
-cat /etc/passwd
-useradd juan
-usermod -aG sudo tu_nombre
-cat /etc/passwd
-groupadd guest
-useradd -m -g guest pablo
-groups juan 
-groups pablo
-deluser --remove-home pablo
-groupdel guest
-cat /etc/passwd
+👤 PRACTICA 3 – Usuarios y grupos
+🔹 su -
 
-PRACTICA 4 MODULO 1
-mkdir materia
+Acceso como root.
 
-cd materia
+🔹 cat /etc/passwd
 
-vi estudiante.txt
+Muestra todos los usuarios del sistema.
 
+Cada línea = un usuario.
+
+🔹 useradd juan
+
+Crea un usuario llamado juan.
+
+No crea carpeta home automáticamente (depende del sistema).
+
+🔹 usermod -aG sudo tu_nombre
+
+Agrega tu usuario al grupo sudo.
+
+-aG = añadir sin eliminar otros grupos.
+
+Permite ejecutar comandos como administrador.
+
+🔹 cat /etc/passwd
+
+Verificas que el usuario fue creado.
+
+🔹 groupadd guest
+
+Crea un grupo llamado guest.
+
+🔹 useradd -m -g guest pablo
+
+Crea usuario pablo:
+
+-m: crea carpeta /home/pablo
+
+-g guest: lo asigna al grupo guest
+
+🔹 groups juan
+
+Muestra los grupos a los que pertenece juan.
+
+🔹 groups pablo
+
+Muestra los grupos de pablo.
+
+🔹 deluser --remove-home pablo
+
+Elimina el usuario pablo y su carpeta personal.
+
+🔹 groupdel guest
+
+Elimina el grupo guest.
+
+🔹 cat /etc/passwd
+
+Verificación final de usuarios.
+
+📁 PRACTICA 4 – Archivos y permisos
+🔹 mkdir materia
+
+Crea un directorio llamado materia.
+
+🔹 cd materia
+
+Entra al directorio.
+
+🔹 vi estudiante.txt
+
+Abre/crea un archivo llamado estudiante.txt con el editor vi.
+
+🔹 Permisos
 chmod 700 estudiante.txt
+
+Permisos:
+
+dueño: lectura, escritura, ejecución
+
+grupo: ninguno
+
+otros: ninguno
+
 chmod 070 estudiante.txt
 
-cd ..
+Permisos:
 
-mkdir materia2
+dueño: ninguno
 
-cp materia/estudiante.txt materia2/
+grupo: lectura, escritura, ejecución
 
-rm -r materia
+otros: ninguno
+
+⚠️ Aquí cambias completamente los permisos anteriores.
+
+🔹 cd ..
+
+Regresa al directorio anterior.
+
+🔹 mkdir materia2
+
+Crea otro directorio.
+
+🔹 cp materia/estudiante.txt materia2/
+
+Copia el archivo de materia a materia2.
+
+🔹 rm -r materia
+
+Elimina el directorio materia y todo su contenido.
+
+-r = recursivo (borra carpetas con archivos dentro).
