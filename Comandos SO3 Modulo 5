@@ -1,0 +1,51 @@
+# Entrar como superusuario
+su -
+
+# Configurar el demonio SSH para permitir acceso al root
+# Se cambia 'PermitRootLogin prohibit-password' a 'yes'
+nano /etc/ssh/sshd_config
+
+# Reiniciar el servicio para aplicar los cambios de seguridad
+systemctl restart ssh
+
+
+# Entrar como superusuario (para que el cron de root funcione)
+su -
+
+# Generar par de llaves RSA (Pública y Privada)
+# Presionar ENTER a todo para omitir el passphrase
+ssh-keygen -t rsa
+
+# Transferir la llave pública al servidor secundario para crear el enlace de confianza
+ssh-copy-id root@192.168.0.102
+
+
+# Crear el directorio solicitado en el mandato
+mkdir -p /root/practica_rsync
+
+# Generar masivamente 100 archivos de prueba usando expansión de llaves
+touch /root/practica_rsync/archivo{1..100}.txt
+
+
+# Crear el archivo del script
+nano /root/sincronizar.sh
+
+# --- Contenido del script ---
+# #!/bin/bash
+# rsync -avz /root/practica_rsync/ root@192.168.0.102:/root/respaldo_modulo_v/
+# ----------------------------
+
+# Otorgar permisos de ejecución al archivo
+chmod +x /root/sincronizar.sh
+
+# Abrir el editor de tareas cron para root
+crontab -e
+
+# Añadir la siguiente línea al final del archivo:
+# * * * * * /root/sincronizar.sh
+
+# Crear archivo de validación en el principal
+touch /root/practica_rsync/Logrado_20230119.txt
+
+# Esperar 1 minuto y validar en el servidor secundario (.102)
+ls -l /root/respaldo_modulo_v/
