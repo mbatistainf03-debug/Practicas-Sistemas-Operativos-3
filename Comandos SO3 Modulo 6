@@ -1,0 +1,125 @@
+Práctica 1 - Cifrado con GPG2 en Debian
+
+# Actualizar repositorios e instalar GPG2 y Haveged
+# haveged ayuda a generar entropía para la creación de llaves
+sudo apt update && sudo apt install gnupg2 haveged -y
+
+# Definir la terminal actual para GPG
+export GPG_TTY=$(tty)
+
+# Forzar el modo loopback para el pinentry (evita ventanas emergentes)
+mkdir -p ~/.gnupg
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+
+# Reiniciar el agente para aplicar cambios
+gpgconf --kill gpg-agent
+
+gpg --full-generate-key
+
+# Crear directorio y archivo
+mkdir ~/practica_cifrado && cd ~/practica_cifrado
+echo "Información secreta del ITLA" > secreto.txt
+
+# Cifrar el archivo usando la llave pública del receptor ("Melvin")
+# -e: encrypt | -r: recipient
+gpg -e -r "Melvin Batista" secreto.txt
+
+cat secreto.txt.gpg
+
+# Descifrar y mostrar en consola
+gpg -d secreto.txt.gpg
+
+----------------------------------------------------------------------------
+Práctica 2: Gestión de Cortafuegos en Debian (iptables & UFW)
+
+# Actualizar el índice de paquetes e instalar servidores
+sudo apt update
+sudo apt install apache2 vsftpd openssh-server -y
+
+# Habilitar e iniciar servicios (Asegura el arranque tras reinicio)
+sudo systemctl enable --now apache2 vsftpd ssh
+
+ss -tuln | grep -E '21|22|80'
+
+# -A: Añade regla, -p: Protocolo, --dport: Puerto destino, -j: Acción (DROP)
+sudo iptables -A INPUT -p tcp --dport 80 -j DROP
+sudo iptables -A INPUT -p tcp --dport 21 -j DROP
+sudo iptables -A INPUT -p tcp --dport 22 -j DROP
+
+#mostrar reglas
+
+sudo iptables -L -n -v
+
+# -F: Flush (Vaciar todas las reglas)
+sudo iptables -F
+
+#instalacion y activacion
+sudo apt install ufw -y
+sudo ufw enable
+
+#bloqueo de trafico 
+
+sudo ufw deny 80/tcp
+sudo ufw deny 21/tcp
+sudo ufw deny 22/tcp
+
+#mostrar estado de firewall
+
+sudo ufw status verbose
+
+#habilitar trafico
+sudo ufw allow 80/tcp
+sudo ufw allow 21/tcp
+sudo ufw allow 22/tcp
+-----------------------------------------------------
+practica 3Instalación de Snort 3 desde el Código Fuente (Debian Trixie)
+
+#. Instalación de Dependencias del Sistema
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y build-essential libpcap-dev libnet1-dev zlib1g-dev \
+luajit hwloc libdumbnet-dev bison flex liblzma-dev openssl libssl-dev pkg-config \
+libhwloc-dev cmake cpputest libsqlite3-dev uuid-dev libcmocka-dev \
+libnetfilter-queue-dev libmnl-dev autotools-dev libluajit-5.1-dev libunwind-dev \
+git libpcre2-dev libtool autoconf
+
+#Instalación de LibDAQ
+mkdir ~/snort-source-files && cd ~/snort-source-files
+git clone https://github.com/snort3/libdaq.git
+cd libdaq
+./bootstrap
+./configure
+make
+sudo make install
+sudo ldconfig
+
+#Compilación e Instalación de Snort 3
+
+cd ~/snort-source-files
+git clone https://github.com/snort3/snort3.git
+cd snort3
+./configure_cmake.sh --prefix=/usr/local/snort
+cd build
+make -j$(nproc)
+sudo make install
+
+#Configuración de Rutas y Enlaces Simbólicos
+
+# Agregar al PATH del usuario
+echo 'export PATH=$PATH:/usr/local/snort/bin' >> ~/.bashrc
+source ~/.bashrc
+
+# Crear enlace simbólico para acceso global (SUDO)
+sudo ln -s /usr/local/snort/bin/snort /usr/bin/snort
+
+#Configuración de Reglas (Práctica 3)
+sudo mkdir -p /usr/local/snort/etc/rules
+sudo nano /usr/local/snort/etc/rules/local.rules
+
+# Detección para Práctica 3 - Melvin Batista (20230119)
+alert icmp any any -> any any (msg:"[20230119] Alerta: PING detectado"; sid:1000001; rev:1;)
+alert tcp any any -> any 21 (msg:"[20230119] Alerta: Acceso FTP (Port 21)"; sid:1000002; rev:1;)
+alert tcp any any -> any 22 (msg:"[20230119] Alerta: Acceso SSH (Port 22)"; sid:1000003; rev:1;)
+alert tcp any any -> any 80 (msg:"[20230119] Alerta: Trafico HTTP (Port 80)"; sid:1000004; rev:1;)
+
+# Iniciar Snort 3
+sudo snort -c /usr/local/snort/etc/snort/snort.lua -R /usr/local/snort/etc/rules/local.rules -i ens33 -A alert_fast
