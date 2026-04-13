@@ -1,0 +1,161 @@
+Practica 1: compartir archivos entre linux utilizando NFS 
+
+# Actualizar repositorios e instalar el servidor NFS
+sudo apt update
+sudo apt install nfs-kernel-server -y
+
+# Crear el directorio a compartir
+sudo mkdir -p /OS3
+
+# Generar 100 archivos de prueba llamados Adrian [1..100].txt
+sudo bash -c 'for i in {1..100}; do touch /OS3/Adrian$i.txt; done'
+
+# Configurar permisos (dueño nobody para compatibilidad y lectura/escritura total)
+sudo chown nobody:nogroup /OS3
+sudo chmod 777 /OS3
+
+# Configurar el archivo de exportación
+# Añadimos la regla para permitir el acceso a la red local
+echo "/OS3 192.168.0.0/24(rw,sync,no_subtree_check)" | sudo tee -a /etc/exports
+
+# Abrir el firewall para permitir tráfico NFS (Vital si usas UFW)
+sudo ufw allow from 192.168.0.0/24 to any port nfs
+
+# Aplicar cambios y reiniciar el servicio
+sudo exportfs -ra
+sudo systemctl restart nfs-kernel-server
+
+# Actualizar repositorios e instalar herramientas de cliente NFS
+sudo apt update
+sudo apt install nfs-common -y
+
+# Crear el punto de montaje (donde veremos los archivos del servidor)
+sudo mkdir -p /mnt/nfs_os3
+
+# Montaje manual para pruebas iniciales
+sudo mount 192.168.0.150:/OS3 /mnt/nfs_os3
+
+# Verificar que los archivos están presentes
+ls -l /mnt/nfs_os3 | wc -l
+
+# Editar el archivo fstab
+sudo nano /etc/fstab
+
+# Agregar la siguiente línea al final del archivo:
+# Origen: 192.168.0.150:/OS3
+# Punto de montaje: /mnt/nfs_os3
+# Opciones: defaults (estándar), _netdev (espera a que la red suba)
+192.168.0.150:/OS3  /mnt/nfs_os3  nfs  defaults,_netdev  0  0
+
+# Probar la configuración de fstab sin reiniciar
+sudo umount /mnt/nfs_os3
+sudo mount -a
+
+# Verificar de nuevo
+df -h | grep OS3
+
+----------------------------------------------
+Practica 2: Creacion de fileserver compatible con Windows utilizando SAMBA
+
+
+## 1. Configuración de Red y Hostname
+Establecemos la identidad del servidor para que coincida con el Reino (Realm) de Active Directory.
+
+
+# Definir hostname FQDN
+sudo hostnamectl set-hostname DebianItla20230119.so3.inet
+
+# Configurar resolución local en /etc/hosts
+echo "192.168.0.150  DebianItla20230119.so3.inet DebianItla20230119" | sudo tee -a /etc/hosts
+
+# Detener y deshabilitar servicios de Samba anteriores
+sudo systemctl stop smbd nmbd winbind
+sudo systemctl disable smbd nmbd winbind
+
+# Actualizar e instalar paquetes de Active Directory y Kerberos
+sudo apt update
+sudo apt install samba krb5-config smbclient -y
+
+# Respaldar configuración de Samba original
+sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.bak
+
+# Aprovisionamiento interactivo del dominio
+# Realm: SO3.INET | Domain: SO3 | Role: dc | DNS: SAMBA_INTERNAL
+sudo samba-tool domain provision --use-rfc2307 --interactive
+
+# Crear usuario 'lanegracubana' con la matrícula como contraseña
+sudo samba-tool user create lanegracubana 20230119
+
+# Verificar que el usuario fue creado exitosamente
+sudo samba-tool user list
+
+# Desenmascarar y arrancar el servicio de AD DC
+sudo systemctl unmask samba-ad-dc
+sudo systemctl enable --now samba-ad-dc
+
+# Verificar el estado del servicio
+sudo systemctl status samba-ad-dc
+
+# Solicitar ticket para el administrador del dominio
+kinit administrator@SO3.INET
+
+# Listar tickets activos
+klist
+--------------------------------------------------------------
+Practica 3: Creacion de controlador de Dominio con cliente Windows
+
+# 1. Configuración de Identidad y Red
+# ----------------------------------------------------------
+# Establecer el nombre completo del host (FQDN)
+sudo hostnamectl set-hostname DebianItla20230119.so3.inet
+
+# Configurar resolución local en /etc/hosts
+# Debe apuntar la IP 192.168.0.150 al FQDN y al hostname corto
+sudo bash -c 'cat <<EOF > /etc/hosts
+127.0.0.1       localhost
+192.168.0.150   DebianItla20230119.so3.inet DebianItla20230119
+EOF'
+
+# 2. Limpieza de Servicios Previos
+# ----------------------------------------------------------
+# Detener servicios de Samba estándar para evitar conflictos con el modo AD DC
+sudo systemctl stop smbd nmbd winbind
+sudo systemctl disable smbd nmbd winbind
+
+# 3. Instalación de Dependencias
+# ----------------------------------------------------------
+sudo apt update
+sudo apt install samba krb5-config smbclient -y
+
+# 4. Aprovisionamiento del Dominio
+# ----------------------------------------------------------
+# Respaldar configuración original
+sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.bak
+
+# Crear el dominio de forma interactiva
+# Realm: SO3.INET | Domain: SO3 | Role: dc | DNS: SAMBA_INTERNAL
+sudo samba-tool domain provision --use-rfc2307 --interactive
+
+# 5. Configuración de DNS del Sistema (Importante para AD)
+# ----------------------------------------------------------
+sudo bash -c 'cat <<EOF > /etc/resolv.conf
+domain so3.inet
+search so3.inet
+nameserver 127.0.0.1
+EOF'
+
+# 6. Gestión de Usuarios
+# ----------------------------------------------------------
+# Crear usuario solicitado con política de complejidad (Mayúscula + Números)
+sudo samba-tool user create lanegracubana Itla1234567
+
+# 7. Activación del Controlador de Dominio
+# ----------------------------------------------------------
+# Desenmascarar y activar el servicio unificado de AD DC
+sudo systemctl unmask samba-ad-dc
+sudo systemctl enable --now samba-ad-dc
+
+# 8. Verificación
+# ----------------------------------------------------------
+# Listar usuarios para confirmar la creación de 'lanegracubana'
+sudo samba-tool user list
